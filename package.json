@@ -1,0 +1,11 @@
+{
+  "name": "notion-cms-toolkit",
+  "packageManager": "yarn@4.2.2",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "eslint": "^9.4.0",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
