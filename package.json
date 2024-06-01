@@ -1,12 +1,22 @@
 {
   "name": "notion-cms-toolkit",
   "packageManager": "yarn@4.2.2",
+  "scripts": {
+    "dev": "ts-node --esm src/main.ts"
+  },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
+    "@prisma/client": "^5.14.0",
+    "change-case": "^5.4.4",
+    "dotenv": "^16.4.5",
     "eslint": "^8.0.0",
     "eslint-config-easyrent": "^1.0.17",
     "prettier": "^3.2.5",
+    "prisma": "^5.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.13.0"
   }
 }

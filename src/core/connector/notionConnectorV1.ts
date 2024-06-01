@@ -6,6 +6,7 @@ import {
   RichTextItemResponse,
   UserObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
+import { camelCase } from 'change-case';
 
 import {
   BuildNotionConnector,
@@ -41,6 +42,7 @@ import {
 } from '../types/notionObjectTypes';
 import {
   NotionDocumentProperty,
+  NotionPropertySchemaDefinition,
   NotionPropertyType,
 } from '../types/notionPropertyTypes';
 
@@ -72,11 +74,43 @@ class NotionConnectorV1 implements NotionConnectorInterface {
         name: db.title.map((item) => item.plain_text).join(''),
         cover: db.cover ? await this.handleNotionFile(db.cover) : undefined,
         icon: await this.handleIcon(db.icon),
-        propertySchema: [],
+        propertySchema: this.getDatabsePropertySchema(db),
         createdTime: db.created_time,
         lastEditedTime: db.last_edited_time,
       })),
     );
+  }
+
+  private getDatabsePropertySchema(
+    db: DatabaseObjectResponse,
+  ): NotionPropertySchemaDefinition[] {
+    const properties: NotionPropertySchemaDefinition[] = [];
+
+    for (const [name, value] of Object.entries(db.properties)) {
+      let allowedValues: string[] | undefined = undefined;
+      // if type is "status", "select", or "multi_select", we need to get the allowed values
+      if (value.type === 'select') {
+        allowedValues = value.select.options.map((o) => o.name);
+      }
+
+      if (value.type === 'multi_select') {
+        allowedValues = value.multi_select.options.map((o) => o.name);
+      }
+
+      if (value.type === 'status') {
+        allowedValues = value.status.options.map((o) => o.name);
+      }
+
+      properties.push({
+        allowedValues,
+        displayName: name,
+        generatedName: camelCase(name),
+        notionId: value.id,
+        type: mapNotionPropertyTypeToPropertyType(value.type),
+      });
+    }
+
+    return properties;
   }
 
   async getDatabase(notionDatabaseId: string): Promise<NotionDatabase> {
@@ -630,6 +664,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
     return {
       notionId: page.id,
+      notionDatabaseId: (page.parent as any).database_id,
       name: specialProperties.title,
       slug: page.id,
       url: page.url,

@@ -7,6 +7,7 @@ import {
 
 export type NotionDocument = {
   notionId: string;
+  notionDatabaseId: string;
   slug: string;
   name: string;
   url: string;

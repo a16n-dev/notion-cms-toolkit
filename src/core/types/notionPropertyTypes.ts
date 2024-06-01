@@ -3,7 +3,7 @@ import {
   NotionFile,
   NotionRichText,
   NotionVerificationStatus,
-} from '@lib/notion/types/notionHelperTypes';
+} from './notionHelperTypes';
 
 export enum NotionPropertyType {
   Number = 'number',
@@ -206,7 +206,9 @@ export interface NotionRollupProperty extends NotionPropertyBase {
 export type NotionPropertySchemaDefinition = {
   notionId: string;
   displayName: string;
+  // camelcase representation of the displayName, along with any special characters removed
   generatedName: string;
   type: NotionPropertyType;
+  // This is used for client generation - to generate enums for specific types
   allowedValues?: Array<string>;
 };

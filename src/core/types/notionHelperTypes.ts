@@ -112,8 +112,7 @@ export type NotionIcon =
   | {
       type: NotionIconType.Image;
       file: NotionFile;
-    }
-  | null;
+    };
 
 export type NotionFile = {
   url: string;
