@@ -12,7 +12,7 @@ import {
   BuildNotionConnector,
   NotionConnectorFileCacheHandler,
   NotionConnectorInterface,
-} from './notionConnectorInterface';
+} from './notionConnectorInterface.ts';
 
 import {
   NotionBlock,
@@ -21,7 +21,7 @@ import {
   NotionNumberedListBlock,
   NotionToDoListBlock,
   NotionTopLevelBlock,
-} from '../types/notionBlockTypes';
+} from '../types/notionBlockTypes.ts';
 import {
   NotionColor,
   NotionDate,
@@ -33,18 +33,18 @@ import {
   NotionRichTextItem,
   NotionRichTextItemType,
   NotionVerificationStatus,
-} from '../types/notionHelperTypes';
+} from '../types/notionHelperTypes.ts';
 import {
   NotionDatabase,
   NotionDocument,
   NotionDocumentContent,
   NotionUser,
-} from '../types/notionObjectTypes';
+} from '../types/notionObjectTypes.ts';
 import {
   NotionDocumentProperty,
   NotionPropertySchemaDefinition,
   NotionPropertyType,
-} from '../types/notionPropertyTypes';
+} from '../types/notionPropertyTypes.ts';
 
 class NotionConnectorV1 implements NotionConnectorInterface {
   private notionClient: Client;

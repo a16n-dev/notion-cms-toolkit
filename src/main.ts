@@ -1,6 +1,6 @@
-import { writeFileSync } from 'fs';
+import { writeFileSync } from 'node:fs';
 
-import { buildNotionConnector } from './core/connector/notionConnectorV1';
+import { buildNotionConnector } from './core/connector/notionConnectorV1.ts';
 import 'dotenv/config';
 
 const cacheHandler = async (url: string, name?: string) => {

@@ -4,6 +4,11 @@
   "scripts": {
     "dev": "ts-node --esm src/main.ts"
   },
+  "exports": "./src/main.ts",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
     "@prisma/client": "^5.14.0",

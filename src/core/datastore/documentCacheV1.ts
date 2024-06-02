@@ -6,13 +6,13 @@ import {
   PrismaClient,
 } from '@prisma/client';
 
-import { DocumentCacheInterface } from './documentCacheInterface';
+import { DocumentCacheInterface } from './documentCacheInterface.ts';
 
 import {
   NotionDatabase,
   NotionDocument,
   NotionDocumentContent,
-} from '../types/notionObjectTypes';
+} from '../types/notionObjectTypes.ts';
 
 export class DocumentCacheV1 implements DocumentCacheInterface {
   constructor(private prisma: PrismaClient) {}

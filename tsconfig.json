@@ -1,13 +1,15 @@
 {
 
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "esnext",
+    "moduleResolution": "node",
     "lib": ["es2021", "dom"],
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "target": "es2017",
     "sourceMap": true,
     "jsx": "react-jsx",
