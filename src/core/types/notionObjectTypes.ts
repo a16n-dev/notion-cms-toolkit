@@ -21,6 +21,7 @@ export type NotionDocument = {
 
 export type NotionDatabase = {
   notionId: string;
+  slug: string;
   name: string;
   url: string;
   cover?: NotionFile;

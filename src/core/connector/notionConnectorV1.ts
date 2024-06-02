@@ -6,7 +6,7 @@ import {
   RichTextItemResponse,
   UserObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { camelCase } from 'change-case';
+import { camelCase, kebabCase } from 'change-case';
 
 import {
   BuildNotionConnector,
@@ -68,16 +68,23 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     });
 
     return Promise.all(
-      (databases.results as DatabaseObjectResponse[]).map(async (db) => ({
-        notionId: db.id,
-        url: db.url,
-        name: db.title.map((item) => item.plain_text).join(''),
-        cover: db.cover ? await this.handleNotionFile(db.cover) : undefined,
-        icon: await this.handleIcon(db.icon),
-        propertySchema: this.getDatabsePropertySchema(db),
-        createdTime: db.created_time,
-        lastEditedTime: db.last_edited_time,
-      })),
+      (databases.results as DatabaseObjectResponse[]).map(async (db) => {
+        const text = db.title.map((item) => item.plain_text).join('');
+
+        const slug = kebabCase(text);
+
+        return {
+          notionId: db.id,
+          url: db.url,
+          slug,
+          name: text,
+          cover: db.cover ? await this.handleNotionFile(db.cover) : undefined,
+          icon: await this.handleIcon(db.icon),
+          propertySchema: this.getDatabsePropertySchema(db),
+          createdTime: db.created_time,
+          lastEditedTime: db.last_edited_time,
+        };
+      }),
     );
   }
 
@@ -120,9 +127,14 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
     const db = database as DatabaseObjectResponse;
 
+    const text = db.title.map((item) => item.plain_text).join('');
+
+    const slug = kebabCase(text);
+
     return {
       notionId: db.id,
       url: db.url,
+      slug,
       name: db.title.map((item) => item.plain_text).join(''),
       cover: db.cover ? await this.handleNotionFile(db.cover) : undefined,
       icon: await this.handleIcon(db.icon),
