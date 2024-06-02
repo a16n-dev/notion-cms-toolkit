@@ -47,15 +47,22 @@ import {
 } from '../types/notionPropertyTypes.ts';
 
 class NotionConnectorV1 implements NotionConnectorInterface {
-  private notionClient: Client;
+  private readonly notionClient: Client;
+  private readonly fileCacheHandler: (
+    url: string,
+    name?: string,
+  ) => Promise<NotionFile>;
 
-  constructor(
-    auth: string,
-    private fileCacheHandler: NotionConnectorFileCacheHandler,
-  ) {
+  constructor(auth: string, fileCacheHandler: NotionConnectorFileCacheHandler) {
     this.notionClient = new Client({
       auth,
     });
+
+    this.fileCacheHandler = async (url, name?: string) => {
+      const newUrl = await fileCacheHandler(url);
+
+      return { url: newUrl, name };
+    };
   }
 
   async getConnectedDatabases(): Promise<NotionDatabase[]> {

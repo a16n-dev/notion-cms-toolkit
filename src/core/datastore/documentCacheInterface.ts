@@ -9,6 +9,7 @@ import {
   NotionDatabase,
   NotionDocument,
   NotionDocumentContent,
+  NotionUser,
 } from '../types/notionObjectTypes';
 
 /**
@@ -35,6 +36,16 @@ export interface DocumentCacheInterface {
   cacheDocuments(documents: NotionDocument[]): Promise<CachedNotionDocument[]>;
 
   /**
+   * Stores information about a user in the cache
+   */
+  cacheUser(user: NotionUser): Promise<CachedNotionUser>;
+
+  /**
+   * @see `cacheUser`
+   */
+  cacheUsers(users: NotionUser[]): Promise<CachedNotionUser[]>;
+
+  /**
    * Caches the blocks of a document in the cache
    */
   cacheDocumentBlocks(
@@ -55,7 +66,7 @@ export interface DocumentCacheInterface {
   /**
    * Used to check if a file is in the file cache, based on the unique URL-based key provided
    */
-  isFileCached(urlKey: string): Promise<CachedNotionFile | undefined>;
+  isFileCached(urlKey: string): Promise<CachedNotionFile | null>;
 
   // Database query methods
   queryDatabases(): Promise<CachedNotionDatabase[]>;
@@ -71,10 +82,6 @@ export interface DocumentCacheInterface {
   queryDocumentByNotionId(
     notionId: string,
   ): Promise<CachedNotionDocument | null>;
-  queryDocumentInDatabaseById(
-    databaseId: string,
-    documentId: string,
-  ): Promise<CachedNotionDocument | null>;
   queryDocumentInDatabaseBySlug(
     databaseId: string,
     slug: string,
@@ -84,3 +91,5 @@ export interface DocumentCacheInterface {
   queryUserById(userId: string): Promise<CachedNotionUser | null>;
   queryUserByNotionId(notionId: string): Promise<CachedNotionUser | null>;
 }
+
+export type BuildDocumentCache = () => DocumentCacheInterface;

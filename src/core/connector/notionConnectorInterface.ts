@@ -1,4 +1,3 @@
-import { NotionFile } from '../types/notionHelperTypes';
 import {
   NotionDatabase,
   NotionDocument,
@@ -56,10 +55,7 @@ export interface NotionConnectorInterface {
 /**
  * A function that takes a file URL and caches the file if needed. If the file is cached, the URL to the cached file should be returned. Otherwise, the original url should be returned.
  */
-export type NotionConnectorFileCacheHandler = (
-  fileUrl: string,
-  fileName?: string,
-) => Promise<NotionFile>;
+export type NotionConnectorFileCacheHandler = (url: string) => Promise<string>;
 
 /**
  * A function that creates a notion connector with the given authentication credientals and file caching behaviour

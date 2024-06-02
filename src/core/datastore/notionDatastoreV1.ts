@@ -1,5 +1,6 @@
 import { DocumentCacheInterface } from './documentCacheInterface';
 import {
+  BuildNotionDatastore,
   NotionDatastoreConfig,
   NotionDatastoreInterface,
 } from './notionDatastoreInterface';
@@ -45,7 +46,12 @@ export class NotionDatastoreV1 implements NotionDatastoreInterface {
     }
   }
 
-  syncUsers(): Promise<void> {
-    return Promise.resolve(undefined);
+  async syncUsers(): Promise<void> {
+    const users = await this.connector.getUsers();
+
+    await this.cache.cacheUsers(users);
   }
 }
+
+export const buildNotionDatastore: BuildNotionDatastore = (config) =>
+  new NotionDatastoreV1(config);

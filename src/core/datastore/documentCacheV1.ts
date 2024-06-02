@@ -6,16 +6,24 @@ import {
   PrismaClient,
 } from '@prisma/client';
 
-import { DocumentCacheInterface } from './documentCacheInterface.ts';
+import {
+  BuildDocumentCache,
+  DocumentCacheInterface,
+} from './documentCacheInterface.ts';
 
 import {
   NotionDatabase,
   NotionDocument,
   NotionDocumentContent,
+  NotionUser,
 } from '../types/notionObjectTypes.ts';
 
 export class DocumentCacheV1 implements DocumentCacheInterface {
-  constructor(private prisma: PrismaClient) {}
+  private prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = new PrismaClient();
+  }
 
   async cacheDatabase(database: NotionDatabase) {
     return this.prisma.cachedNotionDatabase.upsert({
@@ -24,6 +32,7 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
       },
       create: {
         notionId: database.notionId,
+        slug: database.slug,
         name: database.name,
         url: database.url,
         cover: database.cover,
@@ -33,6 +42,7 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
       },
       update: {
         notionId: database.notionId,
+        slug: database.slug,
         name: database.name,
         url: database.url,
         cover: database.cover ?? undefined,
@@ -121,6 +131,38 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     return cachedDocuments;
   }
 
+  async cacheUser(user: NotionUser): Promise<CachedNotionUser> {
+    return this.prisma.cachedNotionUser.upsert({
+      where: {
+        notionId: user.notionId,
+      },
+      create: {
+        notionId: user.notionId,
+        name: user.name,
+        avatar: user.avatar,
+        lastSyncedAt: new Date(),
+        isBot: user.isBot,
+      },
+      update: {
+        name: user.name,
+        avatar: user.avatar,
+        lastSyncedAt: new Date(),
+        isBot: user.isBot,
+      },
+    });
+  }
+
+  async cacheUsers(users: NotionUser[]): Promise<CachedNotionUser[]> {
+    const cachedUsers: CachedNotionUser[] = [];
+
+    for (const user of users) {
+      const cachedUser = await this.cacheUser(user);
+      cachedUsers.push(cachedUser);
+    }
+
+    return cachedUsers;
+  }
+
   areCachedDocumentBlocksStale(document: CachedNotionDocument): boolean {
     return (
       !document.blocksLastSyncedAt ||
@@ -128,42 +170,56 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     );
   }
 
-  isFileCached(urlKey: string): Promise<CachedNotionFile | undefined> {
-    throw new Error('');
+  async isFileCached(urlKey: string): Promise<CachedNotionFile | null> {
+    return this.prisma.cachedNotionFile.findUnique({
+      where: {
+        urlKey,
+      },
+    });
   }
 
   queryDatabaseById(id: string): Promise<CachedNotionDatabase | null> {
-    throw new Error('');
+    return this.prisma.cachedNotionDatabase.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
   queryDatabaseByNotionId(
     notionId: string,
   ): Promise<CachedNotionDatabase | null> {
-    throw new Error('');
+    return this.prisma.cachedNotionDatabase.findUnique({
+      where: {
+        notionId,
+      },
+    });
   }
 
   queryDatabases(): Promise<CachedNotionDatabase[]> {
-    throw new Error('');
+    return this.prisma.cachedNotionDatabase.findMany();
   }
 
   queryDocumentByNotionId(
     notionId: string,
   ): Promise<CachedNotionDocument | null> {
-    throw new Error('');
-  }
-
-  queryDocumentInDatabaseById(
-    databaseId: string,
-    documentId: string,
-  ): Promise<CachedNotionDocument | null> {
-    throw new Error('');
+    return this.prisma.cachedNotionDocument.findUnique({
+      where: {
+        notionId,
+      },
+    });
   }
 
   queryDocumentInDatabaseBySlug(
     databaseId: string,
     slug: string,
   ): Promise<CachedNotionDocument | null> {
-    throw new Error('');
+    return this.prisma.cachedNotionDocument.findFirst({
+      where: {
+        notionDatabaseId: databaseId,
+        slug,
+      },
+    });
   }
 
   queryDocumentsByDatabaseId(
@@ -184,3 +240,6 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     throw new Error('');
   }
 }
+
+export const buildDocumentCache: BuildDocumentCache = () =>
+  new DocumentCacheV1();

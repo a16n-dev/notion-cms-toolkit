@@ -26,20 +26,19 @@ export interface NotionDatastoreInterface {
   /**
    * Syncs the list of pages in the database
    */
-  syncDatabaseDocuments(databaseId: string): Promise<void>;
+  syncDatabaseDocuments(notionDatabaseId: string): Promise<void>;
 
   /**
    * Syncs the latest blocks for a given document
    */
-  syncDocumentBlocks(documentId: string): Promise<void>;
+  syncDocumentBlocks(notionDocumentId: string): Promise<void>;
 }
 
 export interface NotionDatastoreConfig {
-  auth: string;
   connector: NotionConnectorInterface;
   cache: DocumentCacheInterface;
 }
 
-export type buildNotionDatastore = (
+export type BuildNotionDatastore = (
   config: NotionDatastoreConfig,
 ) => NotionDatastoreInterface;
