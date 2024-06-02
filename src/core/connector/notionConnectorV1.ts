@@ -15,6 +15,7 @@ import {
 } from './notionConnectorInterface.ts';
 
 import {
+  AnyNotionBlock,
   NotionBlock,
   NotionBlockType,
   NotionBulletedListBlock,
@@ -296,6 +297,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
     if (type === 'bulleted_list_item') {
       return {
+        id: `virtual-${blocks[0].id}`,
         content: undefined,
         type: NotionBlockType.BulletedList,
         children: filterBlocksByType(
@@ -306,6 +308,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     }
     if (type === 'numbered_list_item') {
       return {
+        id: `virtual-${blocks[0].id}`,
         content: undefined,
         type: NotionBlockType.NumberedList,
         children: filterBlocksByType(
@@ -316,6 +319,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     }
     if (type === 'to_do') {
       return {
+        id: `virtual-${blocks[0].id}`,
         content: undefined,
         type: NotionBlockType.ToDoList,
         children: filterBlocksByType(
@@ -344,10 +348,11 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     const content = await this.mapNotionBlockContent(block);
 
     return {
+      id: block.id,
       type,
       content,
       children,
-    } as any;
+    } as AnyNotionBlock as any;
   }
 
   private async mapNotionBlockContent(

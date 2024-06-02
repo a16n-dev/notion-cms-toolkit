@@ -11,6 +11,8 @@ import {
   DocumentCacheInterface,
 } from './documentCacheInterface.ts';
 
+import { NotionBlock, NotionBlockType } from '../types/notionBlockTypes.ts';
+import { NotionRichText } from '../types/notionHelperTypes.ts';
 import {
   NotionDatabase,
   NotionDocument,
@@ -79,6 +81,7 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
         url: document.url,
         cover: document.cover,
         icon: document.icon,
+        text: '',
         properties: document.properties as any,
         notionCreatedAt: document.createdTime,
         notionUpdatedAt: document.lastEditedTime,
@@ -112,6 +115,7 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
         notionId: notionDocumentId,
       },
       data: {
+        text: getPlainTextContent(blocks),
         blocks: blocks as any,
         blocksLastSyncedAt: new Date(),
       },
@@ -243,3 +247,136 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
 
 export const buildDocumentCache: BuildDocumentCache = () =>
   new DocumentCacheV1();
+
+const notionRichTextToPlainText = (richText: NotionRichText) =>
+  richText.map((t) => t.text).join('');
+
+const getPlainTextContent = (blocks: NotionBlock[]) => {
+  const withChildren = (text: string, blocks?: NotionBlock[]) => {
+    if (!blocks || blocks.length === 0) {
+      return text;
+    }
+
+    return `${text}\n${getPlainTextContent(blocks)}`;
+  };
+
+  const res = blocks.map((block) => {
+    switch (block.type) {
+      case NotionBlockType.Divider:
+        break;
+      case NotionBlockType.Paragraph:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Heading1:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Heading2:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Heading3:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.BulletedList:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.NumberedList:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.ToDoList:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.Quote:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Toggle:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Template:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.SyncedBlock:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.ChildPage:
+        break;
+      case NotionBlockType.ChildDatabase:
+        break;
+      case NotionBlockType.Equation:
+        return block.content.expression;
+      case NotionBlockType.Code:
+        return notionRichTextToPlainText(block.content.richText);
+      case NotionBlockType.Callout:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.Breadcrumb:
+        break;
+      case NotionBlockType.TableOfContents:
+        break;
+      case NotionBlockType.ColumnList:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.LinkToPage:
+        break;
+      case NotionBlockType.Table:
+        return getPlainTextContent(block.children);
+      case NotionBlockType.Embed:
+        return (
+          block.content.url +
+          '\n' +
+          notionRichTextToPlainText(block.content.caption)
+        );
+      case NotionBlockType.Bookmark:
+        return (
+          block.content.url +
+          '\n' +
+          notionRichTextToPlainText(block.content.caption)
+        );
+      case NotionBlockType.Image:
+        return notionRichTextToPlainText(block.content.caption);
+      case NotionBlockType.Video:
+        return notionRichTextToPlainText(block.content.caption);
+      case NotionBlockType.Pdf:
+        return notionRichTextToPlainText(block.content.caption);
+      case NotionBlockType.File:
+        return notionRichTextToPlainText(block.content.caption);
+      case NotionBlockType.Audio:
+        return notionRichTextToPlainText(block.content.caption);
+      case NotionBlockType.LinkPreview:
+        return block.content.url;
+      case NotionBlockType.BulletedListItem:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.ToDoListItem:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.NumberedListItem:
+        return withChildren(
+          notionRichTextToPlainText(block.content.richText),
+          block.children,
+        );
+      case NotionBlockType.TableRow:
+        return block.content.cells
+          .map((cell) => notionRichTextToPlainText(cell))
+          .join(' ');
+      case NotionBlockType.Column:
+        return getPlainTextContent(block.children);
+    }
+  });
+
+  return res.filter((r) => r).join('\n');
+};

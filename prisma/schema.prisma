@@ -27,6 +27,7 @@ model CachedNotionDocument {
 
   blocks             Json[]
   blocksLastSyncedAt DateTime?
+  text               String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

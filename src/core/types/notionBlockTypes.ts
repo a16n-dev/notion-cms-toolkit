@@ -11,6 +11,10 @@ import {
   NotionRichText,
 } from './notionHelperTypes';
 
+export interface NotionBlockBase {
+  id: string;
+}
+
 /**
  * These are the possible standalone blocks a page can have
  */
@@ -105,13 +109,13 @@ export enum NotionBlockType {
  *
  * *see `AnyNotionBlock` for a general block definition*
  */
-export interface AnyNotionBlock {
+export interface AnyNotionBlock extends NotionBlockBase {
   type: NotionBlockType;
   content: object | undefined;
   children: Array<NotionBlock> | undefined;
 }
 
-export interface NotionParagraphBlock {
+export interface NotionParagraphBlock extends NotionBlockBase {
   type: NotionBlockType.Paragraph;
   content: {
     richText: NotionRichText;
@@ -120,7 +124,7 @@ export interface NotionParagraphBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionHeading1Block {
+export interface NotionHeading1Block extends NotionBlockBase {
   type: NotionBlockType.Heading1;
   content: {
     richText: NotionRichText;
@@ -130,7 +134,7 @@ export interface NotionHeading1Block {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionHeading2Block {
+export interface NotionHeading2Block extends NotionBlockBase {
   type: NotionBlockType.Heading2;
   content: {
     richText: NotionRichText;
@@ -140,7 +144,7 @@ export interface NotionHeading2Block {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionHeading3Block {
+export interface NotionHeading3Block extends NotionBlockBase {
   type: NotionBlockType.Heading3;
   content: {
     richText: NotionRichText;
@@ -150,13 +154,13 @@ export interface NotionHeading3Block {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionBulletedListBlock {
+export interface NotionBulletedListBlock extends NotionBlockBase {
   type: NotionBlockType.BulletedList;
   children: Array<NotionBulletedListItemBlock>;
   content: undefined;
 }
 
-export interface NotionBulletedListItemBlock {
+export interface NotionBulletedListItemBlock extends NotionBlockBase {
   type: NotionBlockType.BulletedListItem;
   content: {
     richText: NotionRichText;
@@ -165,13 +169,13 @@ export interface NotionBulletedListItemBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionNumberedListBlock {
+export interface NotionNumberedListBlock extends NotionBlockBase {
   type: NotionBlockType.NumberedList;
   children: Array<NotionNumberedListItemBlock>;
   content: undefined;
 }
 
-export interface NotionNumberedListItemBlock {
+export interface NotionNumberedListItemBlock extends NotionBlockBase {
   type: NotionBlockType.NumberedListItem;
   content: {
     richText: NotionRichText;
@@ -180,13 +184,13 @@ export interface NotionNumberedListItemBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionToDoListBlock {
+export interface NotionToDoListBlock extends NotionBlockBase {
   type: NotionBlockType.ToDoList;
   children: Array<NotionToDoListItemBlock>;
   content: undefined;
 }
 
-export interface NotionToDoListItemBlock {
+export interface NotionToDoListItemBlock extends NotionBlockBase {
   type: NotionBlockType.ToDoListItem;
   content: {
     richText: NotionRichText;
@@ -196,7 +200,7 @@ export interface NotionToDoListItemBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionQuoteBlock {
+export interface NotionQuoteBlock extends NotionBlockBase {
   type: NotionBlockType.Quote;
   content: {
     richText: NotionRichText;
@@ -205,7 +209,7 @@ export interface NotionQuoteBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionToggleBlock {
+export interface NotionToggleBlock extends NotionBlockBase {
   type: NotionBlockType.Toggle;
   content: {
     richText: NotionRichText;
@@ -214,7 +218,7 @@ export interface NotionToggleBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionTemplateBlock {
+export interface NotionTemplateBlock extends NotionBlockBase {
   type: NotionBlockType.Template;
   content: {
     richText: NotionRichText;
@@ -222,7 +226,7 @@ export interface NotionTemplateBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionSyncedBlockBlock {
+export interface NotionSyncedBlockBlock extends NotionBlockBase {
   type: NotionBlockType.SyncedBlock;
   content: {
     blockId?: string;
@@ -230,7 +234,7 @@ export interface NotionSyncedBlockBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionChildPageBlock {
+export interface NotionChildPageBlock extends NotionBlockBase {
   type: NotionBlockType.ChildPage;
   content: {
     title: string;
@@ -238,7 +242,7 @@ export interface NotionChildPageBlock {
   children: undefined;
 }
 
-export interface NotionChildDatabaseBlock {
+export interface NotionChildDatabaseBlock extends NotionBlockBase {
   type: NotionBlockType.ChildDatabase;
   content: {
     title: string;
@@ -246,7 +250,7 @@ export interface NotionChildDatabaseBlock {
   children: undefined;
 }
 
-export interface NotionEquationBlock {
+export interface NotionEquationBlock extends NotionBlockBase {
   type: NotionBlockType.Equation;
   content: {
     expression: string;
@@ -254,7 +258,7 @@ export interface NotionEquationBlock {
   children: undefined;
 }
 
-export interface NotionCodeBlock {
+export interface NotionCodeBlock extends NotionBlockBase {
   type: NotionBlockType.Code;
   content: {
     richText: NotionRichText;
@@ -264,7 +268,7 @@ export interface NotionCodeBlock {
   children: undefined;
 }
 
-export interface NotionCalloutBlock {
+export interface NotionCalloutBlock extends NotionBlockBase {
   type: NotionBlockType.Callout;
   content: {
     richText: NotionRichText;
@@ -274,18 +278,18 @@ export interface NotionCalloutBlock {
   children: Array<NotionTopLevelBlock>;
 }
 
-export interface NotionDividerBlock {
+export interface NotionDividerBlock extends NotionBlockBase {
   type: NotionBlockType.Divider;
   content: undefined;
 }
 
-export interface NotionBreadcrumbBlock {
+export interface NotionBreadcrumbBlock extends NotionBlockBase {
   type: NotionBlockType.Breadcrumb;
   content: undefined;
   children: undefined;
 }
 
-export interface NotionTableOfContentsBlock {
+export interface NotionTableOfContentsBlock extends NotionBlockBase {
   type: NotionBlockType.TableOfContents;
   content: {
     color?: NotionColor;
@@ -293,19 +297,19 @@ export interface NotionTableOfContentsBlock {
   children: undefined;
 }
 
-export interface NotionColumnListBlock {
+export interface NotionColumnListBlock extends NotionBlockBase {
   type: NotionBlockType.ColumnList;
   children: Array<NotionColumnBlock>;
   content: undefined;
 }
 
-export interface NotionColumnBlock {
+export interface NotionColumnBlock extends NotionBlockBase {
   type: NotionBlockType.Column;
   children: Array<NotionTopLevelBlock>;
   content: undefined;
 }
 
-export interface NotionLinkToPageBlock {
+export interface NotionLinkToPageBlock extends NotionBlockBase {
   type: NotionBlockType.LinkToPage;
   content: {
     type:
@@ -317,7 +321,7 @@ export interface NotionLinkToPageBlock {
   children: undefined;
 }
 
-export interface NotionTableBlock {
+export interface NotionTableBlock extends NotionBlockBase {
   type: NotionBlockType.Table;
   content: {
     hasColumnHeader: boolean;
@@ -327,7 +331,7 @@ export interface NotionTableBlock {
   children: Array<NotionTableRowBlock>;
 }
 
-export interface NotionTableRowBlock {
+export interface NotionTableRowBlock extends NotionBlockBase {
   type: NotionBlockType.TableRow;
   content: {
     cells: Array<NotionRichText>;
@@ -335,7 +339,7 @@ export interface NotionTableRowBlock {
   children: undefined;
 }
 
-export interface NotionEmbedBlock {
+export interface NotionEmbedBlock extends NotionBlockBase {
   type: NotionBlockType.Embed;
   content: {
     url: string;
@@ -344,7 +348,7 @@ export interface NotionEmbedBlock {
   children: undefined;
 }
 
-export interface NotionBookmarkBlock {
+export interface NotionBookmarkBlock extends NotionBlockBase {
   type: NotionBlockType.Bookmark;
   content: {
     url: string;
@@ -353,7 +357,7 @@ export interface NotionBookmarkBlock {
   children: undefined;
 }
 
-export interface NotionImageBlock {
+export interface NotionImageBlock extends NotionBlockBase {
   type: NotionBlockType.Image;
   content: {
     file: NotionFile;
@@ -362,7 +366,7 @@ export interface NotionImageBlock {
   children: undefined;
 }
 
-export interface NotionVideoBlock {
+export interface NotionVideoBlock extends NotionBlockBase {
   type: NotionBlockType.Video;
   content: {
     file: NotionFile;
@@ -371,7 +375,7 @@ export interface NotionVideoBlock {
   children: undefined;
 }
 
-export interface NotionPdfBlock {
+export interface NotionPdfBlock extends NotionBlockBase {
   type: NotionBlockType.Pdf;
   content: {
     file: NotionFile;
@@ -380,7 +384,7 @@ export interface NotionPdfBlock {
   children: undefined;
 }
 
-export interface NotionFileBlock {
+export interface NotionFileBlock extends NotionBlockBase {
   type: NotionBlockType.File;
   content: {
     file: NotionFile;
@@ -389,7 +393,7 @@ export interface NotionFileBlock {
   children: undefined;
 }
 
-export interface NotionAudioBlock {
+export interface NotionAudioBlock extends NotionBlockBase {
   type: NotionBlockType.Audio;
   content: {
     file: NotionFile;
@@ -398,7 +402,7 @@ export interface NotionAudioBlock {
   children: undefined;
 }
 
-export interface NotionLinkPreviewBlock {
+export interface NotionLinkPreviewBlock extends NotionBlockBase {
   type: NotionBlockType.LinkPreview;
   content: {
     url: string;
