@@ -8,12 +8,6 @@ import { NotionConnectorInterface } from '../connector/notionConnectorInterface'
  */
 export interface NotionDatastoreInterface {
   /**
-   * The sync<method> methods are responsible for syncing the data from Notion to the local cache
-   *
-   * the query<method> methods are responsible for querying the local cache.
-   */
-
-  /**
    * Syncs the notion users with the local cache
    */
   syncUsers(): Promise<void>;

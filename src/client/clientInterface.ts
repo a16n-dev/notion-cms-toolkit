@@ -1,15 +1,10 @@
-import { DocumentResponse } from './clientTypes.ts';
+import { NotionDocument } from './clientTypes.ts';
 
 export interface ClientInterface {
-  getDocumentById(
-    database: string,
-    documentId: string,
-  ): Promise<DocumentResponse | null>;
-
-  getDocumenBySlug(
+  getDocumentBySlug(
     database: string,
     slug: string,
-  ): Promise<DocumentResponse | null>;
+  ): Promise<NotionDocument | null>;
 
-  getDocuments(database: string): Promise<DocumentResponse[]>;
+  getDocuments(database: string): Promise<NotionDocument[]>;
 }

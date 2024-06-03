@@ -3,7 +3,7 @@
   "packageManager": "yarn@4.2.2",
   "scripts": {
     "dev": "ts-node --esm src/main.ts",
-    "express": "ts-node --esm src/core/client/express.ts"
+    "express": "ts-node --esm src/client/express.ts"
   },
   "exports": "./src/main.ts",
   "type": "module",

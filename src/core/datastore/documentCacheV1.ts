@@ -1,6 +1,5 @@
 import {
   CachedNotionDatabase,
-  CachedNotionDocument,
   CachedNotionFile,
   CachedNotionUser,
   PrismaClient,
@@ -8,6 +7,7 @@ import {
 
 import {
   BuildDocumentCache,
+  CachedNotionDocumentWithCorrectedTypes,
   DocumentCacheInterface,
 } from './documentCacheInterface.ts';
 
@@ -19,6 +19,7 @@ import {
   NotionDocumentContent,
   NotionUser,
 } from '../types/notionObjectTypes.ts';
+import { NotionPropertyType } from '../types/notionPropertyTypes.ts';
 
 export class DocumentCacheV1 implements DocumentCacheInterface {
   private prisma: PrismaClient;
@@ -68,8 +69,36 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     return cachedDatabases;
   }
 
-  cacheDocument(document: NotionDocument): Promise<CachedNotionDocument> {
-    return this.prisma.cachedNotionDocument.upsert({
+  async cacheDocument(
+    document: NotionDocument,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes> {
+    const people = await this.prisma.cachedNotionUser.findMany();
+
+    // add extra data to any "people" type property
+    const properties = document.properties.map((property) => {
+      if (property.type === NotionPropertyType.People) {
+        return {
+          ...property,
+          value: property.value.map((v) => {
+            const person = people.find((p) => p.notionId === v.notionId);
+            if (person) {
+              return {
+                notionId: person.notionId,
+                name: person.name,
+                avatar: person.avatar,
+                isBot: person.isBot,
+              };
+            } else {
+              return v;
+            }
+          }),
+        };
+      } else {
+        return property;
+      }
+    });
+
+    const cachedDocument = await this.prisma.cachedNotionDocument.upsert({
       where: {
         notionId: document.notionId,
       },
@@ -82,7 +111,7 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
         cover: document.cover,
         icon: document.icon,
         text: '',
-        properties: document.properties as any,
+        properties: properties as any,
         notionCreatedAt: document.createdTime,
         notionUpdatedAt: document.lastEditedTime,
         propertiesLastSyncedAt: new Date(),
@@ -100,17 +129,22 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
         icon: document.icon ?? null,
         notionCreatedAt: document.createdTime,
         notionUpdatedAt: document.lastEditedTime,
-        properties: document.properties as any,
+        properties: properties as any,
         propertiesLastSyncedAt: new Date(),
       },
+      include: {
+        database: true,
+      },
     });
+
+    return cachedDocument as unknown as CachedNotionDocumentWithCorrectedTypes;
   }
 
   async cacheDocumentBlocks(
     notionDocumentId: string,
     blocks: NotionDocumentContent,
-  ): Promise<CachedNotionDocument> {
-    return this.prisma.cachedNotionDocument.update({
+  ): Promise<CachedNotionDocumentWithCorrectedTypes> {
+    const cachedDocument = await this.prisma.cachedNotionDocument.update({
       where: {
         notionId: notionDocumentId,
       },
@@ -119,13 +153,18 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
         blocks: blocks as any,
         blocksLastSyncedAt: new Date(),
       },
+      include: {
+        database: true,
+      },
     });
+
+    return cachedDocument as unknown as CachedNotionDocumentWithCorrectedTypes;
   }
 
   async cacheDocuments(
     documents: NotionDocument[],
-  ): Promise<CachedNotionDocument[]> {
-    const cachedDocuments: CachedNotionDocument[] = [];
+  ): Promise<CachedNotionDocumentWithCorrectedTypes[]> {
+    const cachedDocuments: CachedNotionDocumentWithCorrectedTypes[] = [];
 
     for (const document of documents) {
       const cachedDocument = await this.cacheDocument(document);
@@ -167,7 +206,9 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     return cachedUsers;
   }
 
-  areCachedDocumentBlocksStale(document: CachedNotionDocument): boolean {
+  areCachedDocumentBlocksStale(
+    document: CachedNotionDocumentWithCorrectedTypes,
+  ): boolean {
     return (
       !document.blocksLastSyncedAt ||
       document.notionUpdatedAt.getTime() > document.blocksLastSyncedAt.getTime()
@@ -204,40 +245,67 @@ export class DocumentCacheV1 implements DocumentCacheInterface {
     return this.prisma.cachedNotionDatabase.findMany();
   }
 
-  queryDocumentByNotionId(
+  async queryDocumentByNotionId(
     notionId: string,
-  ): Promise<CachedNotionDocument | null> {
-    return this.prisma.cachedNotionDocument.findUnique({
+  ): Promise<CachedNotionDocumentWithCorrectedTypes | null> {
+    const cachedDocument = await this.prisma.cachedNotionDocument.findUnique({
       where: {
         notionId,
       },
-    });
-  }
-
-  queryDocumentInDatabaseBySlug(
-    databaseId: string,
-    slug: string,
-  ): Promise<CachedNotionDocument | null> {
-    return this.prisma.cachedNotionDocument.findFirst({
-      where: {
-        notionDatabaseId: databaseId,
-        slug,
+      include: {
+        database: true,
       },
     });
+
+    return cachedDocument as unknown as CachedNotionDocumentWithCorrectedTypes | null;
   }
 
-  queryDocumentsByDatabaseId(
-    databaseId: string,
-  ): Promise<CachedNotionDocument[]> {
-    throw new Error('');
+  async queryDocumentInDatabaseBySlug(
+    databaseSlug: string,
+    documentSlug: string,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes | null> {
+    const database = await this.prisma.cachedNotionDatabase.findUniqueOrThrow({
+      where: {
+        slug: databaseSlug,
+      },
+    });
+
+    const document = this.prisma.cachedNotionDocument.findUnique({
+      where: {
+        slug_databaseId: {
+          databaseId: database.id,
+          slug: documentSlug,
+        },
+      },
+      include: {
+        database: true,
+      },
+    });
+
+    return document as unknown as CachedNotionDocumentWithCorrectedTypes | null;
   }
 
-  queryUserById(userId: string): Promise<CachedNotionUser | null> {
-    throw new Error('');
-  }
+  async queryDocumentsByDatabaseSlug(
+    databaseSlug: string,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes[]> {
+    const database = await this.prisma.cachedNotionDatabase.findUnique({
+      where: {
+        slug: databaseSlug,
+      },
+      include: {
+        documents: {
+          include: {
+            database: true,
+          },
+        },
+      },
+    });
 
-  queryUserByNotionId(notionId: string): Promise<CachedNotionUser | null> {
-    throw new Error('');
+    if (!database) {
+      throw new Error(`Invalid database "${databaseSlug}"`);
+    }
+
+    return database.documents as unknown as CachedNotionDocumentWithCorrectedTypes[];
   }
 
   recordCachedFile(): Promise<CachedNotionFile> {
@@ -260,7 +328,7 @@ const getPlainTextContent = (blocks: NotionBlock[]) => {
     return `${text}\n${getPlainTextContent(blocks)}`;
   };
 
-  const res = blocks.map((block) => {
+  const res = blocks.map((block): string | undefined => {
     switch (block.type) {
       case NotionBlockType.Divider:
         break;

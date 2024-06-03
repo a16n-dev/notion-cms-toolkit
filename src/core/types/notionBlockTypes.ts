@@ -281,6 +281,7 @@ export interface NotionCalloutBlock extends NotionBlockBase {
 export interface NotionDividerBlock extends NotionBlockBase {
   type: NotionBlockType.Divider;
   content: undefined;
+  children: undefined;
 }
 
 export interface NotionBreadcrumbBlock extends NotionBlockBase {

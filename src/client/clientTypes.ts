@@ -557,3 +557,19 @@ export interface NotionLinkPreviewBlock {
   };
   children: undefined;
 }
+
+export type NotionDocument = {
+  id: string;
+  slug: string;
+  name: string;
+  cover?: NotionFile;
+  icon?: NotionIcon;
+  properties: Record<string, any>;
+  blocks: NotionTopLevelBlock[];
+};
+
+export type NotionUser = {
+  name?: string;
+  avatar?: string;
+  isBot: boolean;
+};

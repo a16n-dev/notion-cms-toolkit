@@ -4,6 +4,7 @@ import {
   NotionRichText,
   NotionVerificationStatus,
 } from './notionHelperTypes';
+import { NotionUser } from './notionObjectTypes.ts';
 
 export enum NotionPropertyType {
   Number = 'number',
@@ -190,7 +191,7 @@ export interface NotionRichTextProperty extends NotionPropertyBase {
 
 export interface NotionPeopleProperty extends NotionPropertyBase {
   type: NotionPropertyType.People;
-  value: Array<string>;
+  value: Array<NotionUser>;
 }
 
 export interface NotionRelationProperty extends NotionPropertyBase {

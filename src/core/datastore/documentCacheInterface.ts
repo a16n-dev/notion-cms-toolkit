@@ -5,12 +5,28 @@ import {
   CachedNotionUser,
 } from '@prisma/client';
 
+import { NotionTopLevelBlock } from '../types/notionBlockTypes.ts';
+import { NotionFile, NotionIcon } from '../types/notionHelperTypes.ts';
 import {
   NotionDatabase,
   NotionDocument,
   NotionDocumentContent,
   NotionUser,
 } from '../types/notionObjectTypes';
+import { NotionDocumentProperty } from '../types/notionPropertyTypes.ts';
+
+export type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
+
+export type CachedNotionDocumentWithCorrectedTypes = Overwrite<
+  CachedNotionDocument,
+  {
+    cover: NotionFile | null;
+    icon: NotionIcon | null;
+    properties: NotionDocumentProperty[];
+    blocks: NotionTopLevelBlock[];
+    database: CachedNotionDatabase;
+  }
+>;
 
 /**
  * Responsible for storing notion data in the cache.
@@ -28,12 +44,16 @@ export interface DocumentCacheInterface {
   /**
    * Stores information about a notion document in the cache
    */
-  cacheDocument(document: NotionDocument): Promise<CachedNotionDocument>;
+  cacheDocument(
+    document: NotionDocument,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes>;
 
   /**
    * @see `cacheDocument`
    */
-  cacheDocuments(documents: NotionDocument[]): Promise<CachedNotionDocument[]>;
+  cacheDocuments(
+    documents: NotionDocument[],
+  ): Promise<CachedNotionDocumentWithCorrectedTypes[]>;
 
   /**
    * Stores information about a user in the cache
@@ -51,12 +71,14 @@ export interface DocumentCacheInterface {
   cacheDocumentBlocks(
     notionDocumentId: string,
     blocks: NotionDocumentContent,
-  ): Promise<CachedNotionDocument>;
+  ): Promise<CachedNotionDocumentWithCorrectedTypes>;
 
   /**
    * Checks if the blocks of a document are stale and need to be updated
    */
-  areCachedDocumentBlocksStale(document: CachedNotionDocument): boolean;
+  areCachedDocumentBlocksStale(
+    document: CachedNotionDocumentWithCorrectedTypes,
+  ): boolean;
 
   /**
    * Records information about a file that has been cached in the seperate file cache
@@ -76,20 +98,16 @@ export interface DocumentCacheInterface {
   queryDatabaseById(id: string): Promise<CachedNotionDatabase | null>;
 
   // Document query methods
-  queryDocumentsByDatabaseId(
-    databaseId: string,
-  ): Promise<CachedNotionDocument[]>;
+  queryDocumentsByDatabaseSlug(
+    databaseSlug: string,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes[]>;
   queryDocumentByNotionId(
     notionId: string,
-  ): Promise<CachedNotionDocument | null>;
+  ): Promise<CachedNotionDocumentWithCorrectedTypes | null>;
   queryDocumentInDatabaseBySlug(
-    databaseId: string,
-    slug: string,
-  ): Promise<CachedNotionDocument | null>;
-
-  // User query methods
-  queryUserById(userId: string): Promise<CachedNotionUser | null>;
-  queryUserByNotionId(notionId: string): Promise<CachedNotionUser | null>;
+    databaseSlug: string,
+    documentSlug: string,
+  ): Promise<CachedNotionDocumentWithCorrectedTypes | null>;
 }
 
 export type BuildDocumentCache = () => DocumentCacheInterface;

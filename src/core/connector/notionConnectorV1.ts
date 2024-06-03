@@ -690,7 +690,9 @@ class NotionConnectorV1 implements NotionConnectorInterface {
       notionId: page.id,
       notionDatabaseId: (page.parent as any).database_id,
       name: specialProperties.title,
-      slug: page.id,
+      slug:
+        specialProperties.slug ??
+        compressObjectId(page.id) + '-' + kebabCase(specialProperties.title),
       url: page.url,
       cover: page.cover ? await this.handleNotionFile(page.cover) : undefined,
       icon: await this.handleIcon(page.icon),
@@ -743,7 +745,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
   private async processDocumentPropertyValue(
     value: PageObjectResponse['properties'][string],
-  ): Promise<NotionDocumentProperty['value']> {
+  ): Promise<any> {
     switch (value.type) {
       case 'number':
         return value.number;
@@ -805,7 +807,9 @@ class NotionConnectorV1 implements NotionConnectorInterface {
       case 'rich_text':
         return this.mapRichText(value.rich_text);
       case 'people':
-        return value.people.map((p) => p.id);
+        return value.people.map((p) => ({
+          notionId: p.id,
+        }));
       case 'relation':
         return value.relation.map((r) => r.id);
       case 'rollup':
@@ -1087,3 +1091,37 @@ export const buildNotionConnector: BuildNotionConnector = (
   auth,
   fileCacheHandler,
 ) => new NotionConnectorV1(auth, fileCacheHandler);
+
+const compressObjectId = (uuid: string) => {
+  const hex = uuid.replace(/-/g, '');
+
+  const timestampHex = hex.substring(4, 8);
+  const randomHex = hex.substring(15, 18);
+  const counterHex = hex.substring(21, 24);
+
+  const newHex = timestampHex + randomHex + counterHex;
+
+  // for the timestamp, take just the 2 last hex digits
+
+  // for the random, just take
+
+  const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let binaryString = '';
+
+  // Convert hex to binary string
+  for (let i = 0; i < newHex.length; i++) {
+    const binary = parseInt(newHex[i], 16).toString(2).padStart(4, '0');
+    binaryString += binary;
+  }
+
+  let base32String = '';
+
+  // Convert binary string to base32 string
+  for (let i = 0; i < binaryString.length; i += 5) {
+    const chunk = binaryString.substring(i, i + 5).padEnd(5, '0');
+    const index = parseInt(chunk, 2);
+    base32String += base32Chars[index];
+  }
+
+  return base32String.toLowerCase();
+};
