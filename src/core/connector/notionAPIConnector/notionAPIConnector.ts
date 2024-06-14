@@ -9,23 +9,29 @@ import {
 import { camelCase, kebabCase } from 'change-case';
 
 import {
-  BuildNotionConnector,
-  NotionConnectorFileCacheHandler,
-  NotionConnectorInterface,
-} from './notionConnectorInterface.ts';
+  dateResponseToNotionDate,
+  getPlainTextContent,
+  mapColor,
+  mapNotionBlockTypeToBlockType,
+  mapNotionPropertyTypeToPropertyType,
+} from './mappers.ts';
+import {
+  blockTypesWithChildren,
+  compressObjectId,
+  filterBlocksByType,
+  findPropertyOfType,
+  getSlugFromProperties,
+  isAggregateBlock,
+  removeNullUndefinedFromArray,
+} from './utils.ts';
 
 import {
   AnyNotionBlock,
   NotionBlock,
   NotionBlockType,
-  NotionBulletedListBlock,
-  NotionNumberedListBlock,
-  NotionToDoListBlock,
   NotionTopLevelBlock,
-} from '../types/notionBlockTypes.ts';
+} from '../../sharedTypes/notionBlockTypes.ts';
 import {
-  NotionColor,
-  NotionDate,
   NotionFile,
   NotionIcon,
   NotionIconType,
@@ -34,39 +40,41 @@ import {
   NotionRichTextItem,
   NotionRichTextItemType,
   NotionVerificationStatus,
-} from '../types/notionHelperTypes.ts';
-import {
-  NotionDatabase,
-  NotionDocument,
-  NotionDocumentContent,
-  NotionUser,
-} from '../types/notionObjectTypes.ts';
+} from '../../sharedTypes/notionHelperTypes.ts';
 import {
   NotionDocumentProperty,
   NotionPropertySchemaDefinition,
-  NotionPropertyType,
-} from '../types/notionPropertyTypes.ts';
+} from '../../sharedTypes/propertyTypes.ts';
+import {
+  RawNotionDatabase,
+  RawNotionDocument,
+  RawNotionDocumentContent,
+  RawNotionUser,
+} from '../../sharedTypes/rawObjectTypes.ts';
+import {
+  NotionConnectorFileCacheHandler,
+  NotionConnectorInterface,
+} from './../notionConnectorInterface.ts';
 
-class NotionConnectorV1 implements NotionConnectorInterface {
+class NotionAPIConnector implements NotionConnectorInterface {
   private readonly notionClient: Client;
-  private readonly fileCacheHandler: (
-    url: string,
-    name?: string,
-  ) => Promise<NotionFile>;
+  private fileCacheHandler: (url: string, name?: string) => Promise<NotionFile>;
 
-  constructor(auth: string, fileCacheHandler: NotionConnectorFileCacheHandler) {
+  constructor(auth: string) {
     this.notionClient = new Client({
       auth,
     });
+  }
 
+  setFileCacheHandler(handler: NotionConnectorFileCacheHandler) {
     this.fileCacheHandler = async (url, name?: string) => {
-      const newUrl = await fileCacheHandler(url);
+      const newUrl = await handler(url);
 
       return { url: newUrl, name };
     };
   }
 
-  async getConnectedDatabases(): Promise<NotionDatabase[]> {
+  async getConnectedDatabases(): Promise<RawNotionDatabase[]> {
     // Note: we don't do pagination here as we assume there will be less than 100 connected databases
     const databases = await this.notionClient.search({
       filter: {
@@ -128,7 +136,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     return properties;
   }
 
-  async getDatabase(notionDatabaseId: string): Promise<NotionDatabase> {
+  async getDatabase(notionDatabaseId: string): Promise<RawNotionDatabase> {
     const database = await this.notionClient.databases.retrieve({
       database_id: notionDatabaseId,
     });
@@ -152,7 +160,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     };
   }
 
-  async getDocument(notionDocumentId: string): Promise<NotionDocument> {
+  async getDocument(notionDocumentId: string): Promise<RawNotionDocument> {
     const document = await this.notionClient.pages.retrieve({
       page_id: notionDocumentId,
     });
@@ -162,20 +170,22 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     );
   }
 
-  async getDocumentBlocks(
+  async getDocumentContent(
     notionDocumentId: string,
-  ): Promise<NotionDocumentContent> {
+  ): Promise<RawNotionDocumentContent> {
     const blocks = await this.getChildBlocks(notionDocumentId);
 
-    // because we pass in a document ID, we know the output must be top level blocks only
-    return blocks as NotionTopLevelBlock[];
+    return {
+      blocks: blocks as NotionTopLevelBlock[],
+      plainText: getPlainTextContent(blocks),
+    };
   }
 
   async getDocumentsInDatabase(
     notionDatabaseId: string,
-  ): Promise<NotionDocument[]> {
+  ): Promise<RawNotionDocument[]> {
     return await this.getPaginatedNotionResults(async (cursor) => {
-      const documents: NotionDocument[] = [];
+      const documents: RawNotionDocument[] = [];
 
       const response = await this.notionClient.databases.query({
         database_id: notionDatabaseId,
@@ -200,9 +210,9 @@ class NotionConnectorV1 implements NotionConnectorInterface {
     });
   }
 
-  async getUsers(): Promise<NotionUser[]> {
+  async getUsers(): Promise<RawNotionUser[]> {
     return this.getPaginatedNotionResults(async (cursor) => {
-      const users: NotionUser[] = [];
+      const users: RawNotionUser[] = [];
 
       const response = await this.notionClient.users.list({
         start_cursor: cursor,
@@ -224,7 +234,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
   private async processNotionUserObjectResponse(
     user: UserObjectResponse,
-  ): Promise<NotionUser> {
+  ): Promise<RawNotionUser> {
     return {
       notionId: user.id,
       name: user.name ?? undefined,
@@ -679,7 +689,7 @@ class NotionConnectorV1 implements NotionConnectorInterface {
 
   private async processNotionPageObjectResponse(
     page: PageObjectResponse,
-  ): Promise<NotionDocument> {
+  ): Promise<RawNotionDocument> {
     const specialProperties = await this.handleSpecialProperties(
       page.properties,
     );
@@ -874,254 +884,5 @@ class NotionConnectorV1 implements NotionConnectorInterface {
   }
 }
 
-const mapColor = (color: string): NotionColor | undefined => {
-  if (color === 'default') {
-    return undefined;
-  }
-
-  return color as NotionColor;
-};
-
-const mapNotionBlockTypeToBlockType = (
-  type: BlockObjectResponse['type'],
-): NotionBlockType | undefined => {
-  switch (type) {
-    case 'paragraph':
-      return NotionBlockType.Paragraph;
-    case 'heading_1':
-      return NotionBlockType.Heading1;
-    case 'heading_2':
-      return NotionBlockType.Heading2;
-    case 'heading_3':
-      return NotionBlockType.Heading3;
-    case 'bulleted_list_item':
-      return NotionBlockType.BulletedListItem;
-    case 'numbered_list_item':
-      return NotionBlockType.NumberedListItem;
-    case 'quote':
-      return NotionBlockType.Quote;
-    case 'to_do':
-      return NotionBlockType.ToDoListItem;
-    case 'toggle':
-      return NotionBlockType.Toggle;
-    case 'template':
-      return NotionBlockType.Template;
-    case 'synced_block':
-      return NotionBlockType.SyncedBlock;
-    case 'child_page':
-      return NotionBlockType.ChildPage;
-    case 'child_database':
-      return NotionBlockType.ChildDatabase;
-    case 'equation':
-      return NotionBlockType.Equation;
-    case 'code':
-      return NotionBlockType.Code;
-    case 'callout':
-      return NotionBlockType.Callout;
-    case 'divider':
-      return NotionBlockType.Divider;
-    case 'breadcrumb':
-      return NotionBlockType.Breadcrumb;
-    case 'table_of_contents':
-      return NotionBlockType.TableOfContents;
-    case 'column_list':
-      return NotionBlockType.ColumnList;
-    case 'column':
-      return NotionBlockType.Column;
-    case 'link_to_page':
-      return NotionBlockType.LinkToPage;
-    case 'table':
-      return NotionBlockType.Table;
-    case 'table_row':
-      return NotionBlockType.TableRow;
-    case 'embed':
-      return NotionBlockType.Embed;
-    case 'bookmark':
-      return NotionBlockType.Bookmark;
-    case 'image':
-      return NotionBlockType.Image;
-    case 'video':
-      return NotionBlockType.Video;
-    case 'pdf':
-      return NotionBlockType.Pdf;
-    case 'file':
-      return NotionBlockType.File;
-    case 'audio':
-      return NotionBlockType.Audio;
-    case 'link_preview':
-      return NotionBlockType.LinkPreview;
-    case 'unsupported':
-      console.warn('Unsupported block type', type);
-  }
-};
-
-const mapNotionPropertyTypeToPropertyType = (
-  type: PageObjectResponse['properties'][string]['type'],
-): NotionPropertyType => {
-  switch (type) {
-    case 'number':
-      return NotionPropertyType.Number;
-    case 'url':
-      return NotionPropertyType.Url;
-    case 'select':
-      return NotionPropertyType.Select;
-    case 'multi_select':
-      return NotionPropertyType.MultiSelect;
-    case 'status':
-      return NotionPropertyType.Status;
-    case 'date':
-      return NotionPropertyType.Date;
-    case 'email':
-      return NotionPropertyType.Email;
-    case 'phone_number':
-      return NotionPropertyType.PhoneNumber;
-    case 'checkbox':
-      return NotionPropertyType.Checkbox;
-    case 'files':
-      return NotionPropertyType.Files;
-    case 'created_by':
-      return NotionPropertyType.CreatedBy;
-    case 'created_time':
-      return NotionPropertyType.CreatedTime;
-    case 'last_edited_by':
-      return NotionPropertyType.LastEditedBy;
-    case 'last_edited_time':
-      return NotionPropertyType.LastEditedTime;
-    case 'formula':
-      return NotionPropertyType.StringFormula;
-    case 'button':
-      return NotionPropertyType.Button;
-    case 'unique_id':
-      return NotionPropertyType.UniqueId;
-    case 'verification':
-      return NotionPropertyType.Verification;
-    case 'title':
-      return NotionPropertyType.Title;
-    case 'rich_text':
-      return NotionPropertyType.RichText;
-    case 'people':
-      return NotionPropertyType.People;
-    case 'relation':
-      return NotionPropertyType.Relation;
-    case 'rollup':
-      return NotionPropertyType.Rollup;
-  }
-};
-
-const getSlugFromProperties = (
-  properties: PageObjectResponse['properties'],
-) => {
-  const slugProperty = properties['$slug'];
-
-  if (slugProperty && slugProperty.type === 'url') {
-    return slugProperty.url ?? undefined;
-  } else {
-    return undefined;
-  }
-};
-
-const filterBlocksByType = <T extends NotionBlockType>(
-  blocks: NotionBlock[],
-  type: T,
-) =>
-  blocks.filter((block) => block.type === type) as Extract<
-    NotionBlock,
-    { type: T }
-  >[];
-
-const aggregateBlockTypes = [
-  NotionBlockType.ToDoList,
-  NotionBlockType.NumberedList,
-  NotionBlockType.BulletedList,
-] as const;
-
-const isAggregateBlock = (
-  block: NotionBlock,
-): block is
-  | NotionToDoListBlock
-  | NotionBulletedListBlock
-  | NotionNumberedListBlock => aggregateBlockTypes.includes(block.type as any);
-
-const blockTypesWithChildren = [
-  NotionBlockType.Heading1,
-  NotionBlockType.Heading2,
-  NotionBlockType.Heading3,
-  NotionBlockType.Paragraph,
-  NotionBlockType.Table,
-  NotionBlockType.Column,
-  NotionBlockType.BulletedListItem,
-  NotionBlockType.NumberedListItem,
-  NotionBlockType.ToDoListItem,
-  NotionBlockType.Quote,
-  NotionBlockType.Toggle,
-  NotionBlockType.Template,
-  NotionBlockType.SyncedBlock,
-  NotionBlockType.Callout,
-] as const;
-
-const findPropertyOfType = <
-  T extends PageObjectResponse['properties'][string]['type'],
->(
-  properties: PageObjectResponse['properties'][string][],
-  type: T,
-):
-  | Extract<
-      PageObjectResponse['properties'][string],
-      {
-        type: T;
-      }
-    >
-  | undefined => {
-  return properties.find((value) => value.type === type) as any;
-};
-
-const dateResponseToNotionDate = (date: {
-  start: string;
-  end: string | null;
-  time_zone: string | null;
-}): NotionDate => ({
-  start: date.start,
-  end: date.end ?? undefined,
-  timeZone: date.time_zone ?? undefined,
-});
-
-const removeNullUndefinedFromArray = <T>(arr: (T | null | undefined)[]): T[] =>
-  arr.filter((a) => a !== undefined && a !== null) as T[];
-export const buildNotionConnector: BuildNotionConnector = (
-  auth,
-  fileCacheHandler,
-) => new NotionConnectorV1(auth, fileCacheHandler);
-
-const compressObjectId = (uuid: string) => {
-  const hex = uuid.replace(/-/g, '');
-
-  const timestampHex = hex.substring(4, 8);
-  const randomHex = hex.substring(15, 18);
-  const counterHex = hex.substring(21, 24);
-
-  const newHex = timestampHex + randomHex + counterHex;
-
-  // for the timestamp, take just the 2 last hex digits
-
-  // for the random, just take
-
-  const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  let binaryString = '';
-
-  // Convert hex to binary string
-  for (let i = 0; i < newHex.length; i++) {
-    const binary = parseInt(newHex[i], 16).toString(2).padStart(4, '0');
-    binaryString += binary;
-  }
-
-  let base32String = '';
-
-  // Convert binary string to base32 string
-  for (let i = 0; i < binaryString.length; i += 5) {
-    const chunk = binaryString.substring(i, i + 5).padEnd(5, '0');
-    const index = parseInt(chunk, 2);
-    base32String += base32Chars[index];
-  }
-
-  return base32String.toLowerCase();
-};
+export const buildNotionAPIConnector = (auth: string) =>
+  new NotionAPIConnector(auth);

@@ -7,7 +7,7 @@ import {
   CachedNotionDocumentWithCorrectedTypes,
   DocumentCacheInterface,
 } from '../core/datastore/documentCacheInterface.ts';
-import { NotionBlock } from '../core/types/notionBlockTypes.ts';
+import { NotionBlock } from '../core/sharedTypes/notionBlockTypes.ts';
 
 const stripBlockIDs = (blocks: NotionBlock[]) => {
   return blocks.map(({ id: _, children, ...rest }) => {

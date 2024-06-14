@@ -3,9 +3,11 @@ import { NotionFile, NotionIcon } from './notionHelperTypes';
 import {
   NotionDocumentProperty,
   NotionPropertySchemaDefinition,
-} from './notionPropertyTypes';
+} from './propertyTypes';
 
-export type NotionDocument = {
+// These are the "raw" types returned by the connector, to be processed by the datastore
+
+export type RawNotionDocument = {
   notionId: string;
   notionDatabaseId: string;
   slug: string;
@@ -19,7 +21,7 @@ export type NotionDocument = {
   lastEditedTime: string;
 };
 
-export type NotionDatabase = {
+export type RawNotionDatabase = {
   notionId: string;
   slug: string;
   name: string;
@@ -32,9 +34,12 @@ export type NotionDatabase = {
   lastEditedTime: string;
 };
 
-export type NotionDocumentContent = Array<NotionTopLevelBlock>;
+export type RawNotionDocumentContent = {
+  blocks: Array<NotionTopLevelBlock>;
+  plainText: string;
+};
 
-export type NotionUser = {
+export type RawNotionUser = {
   notionId: string;
   name?: string;
   avatar?: NotionFile;

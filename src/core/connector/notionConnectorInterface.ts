@@ -1,9 +1,9 @@
 import {
-  NotionDatabase,
-  NotionDocument,
-  NotionDocumentContent,
-  NotionUser,
-} from '../types/notionObjectTypes';
+  RawNotionDatabase,
+  RawNotionDocument,
+  RawNotionDocumentContent,
+  RawNotionUser,
+} from '../sharedTypes/rawObjectTypes.ts';
 
 /**
  * This class does all the interaction with the Notion API.
@@ -16,17 +16,21 @@ export interface NotionConnectorInterface {
    * Returns a list of all databases that the integration has access to.
    * For each database, the response includes the metadata about the database, as well as it's property schema.
    */
-  getConnectedDatabases(): Promise<NotionDatabase[]>;
+  getConnectedDatabases(): Promise<RawNotionDatabase[]>;
 
   /**
    * Returns a list of all blocks in the specified document
    */
-  getDocumentBlocks(notionDocumentId: string): Promise<NotionDocumentContent>;
+  getDocumentContent(
+    notionDocumentId: string,
+  ): Promise<RawNotionDocumentContent>;
 
   /**
    * Returns a list of all documents in the specified database
    */
-  getDocumentsInDatabase(notionDatabaseId: string): Promise<NotionDocument[]>;
+  getDocumentsInDatabase(
+    notionDatabaseId: string,
+  ): Promise<RawNotionDocument[]>;
 
   /**
    * Returns the document with the specified id.
@@ -34,7 +38,7 @@ export interface NotionConnectorInterface {
    * **NOTE: this method is not recommended, as the Notion API rate limiting is quite strict. If you need multiple documents,
    * it's more efficient to use `getDocumentsInDatabase` to get all the documents at once**
    */
-  getDocument(notionDocumentId: string): Promise<NotionDocument>;
+  getDocument(notionDocumentId: string): Promise<RawNotionDocument>;
 
   /**
    * Returns the database with the specified id.
@@ -42,25 +46,22 @@ export interface NotionConnectorInterface {
    * **NOTE: this method is not recommended, as the Notion API rate limiting is quite strict. If you need multiple databases,
    * it's more efficient to use `getConnectedDatabases` to get all the databases at once**
    */
-  getDatabase(notionDatabaseId: string): Promise<NotionDatabase>;
+  getDatabase(notionDatabaseId: string): Promise<RawNotionDatabase>;
 
   /**
    * Returns all the users in the workspace.
    *
    * **NOTE: This requires extra permission scope for the integration**
    */
-  getUsers(): Promise<NotionUser[]>;
+  getUsers(): Promise<RawNotionUser[]>;
+
+  /**
+   * Sets the file cache handler for the connector.
+   */
+  setFileCacheHandler(handler: NotionConnectorFileCacheHandler): void;
 }
 
 /**
  * A function that takes a file URL and caches the file if needed. If the file is cached, the URL to the cached file should be returned. Otherwise, the original url should be returned.
  */
 export type NotionConnectorFileCacheHandler = (url: string) => Promise<string>;
-
-/**
- * A function that creates a notion connector with the given authentication credientals and file caching behaviour
- */
-export type BuildNotionConnector = (
-  auth: string,
-  fileCacheHandler: NotionConnectorFileCacheHandler,
-) => NotionConnectorInterface;
