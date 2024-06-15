@@ -11,13 +11,16 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.598.0",
     "@notionhq/client": "^2.2.15",
     "@prisma/client": "^5.14.0",
+    "axios": "^1.7.2",
     "change-case": "^5.4.4",
     "dotenv": "^16.4.5",
     "eslint": "^8.0.0",
     "eslint-config-easyrent": "^1.0.17",
     "express": "^4.19.2",
+    "file-type": "^19.0.0",
     "prettier": "^3.2.5",
     "prisma": "^5.14.0",
     "ts-node": "^10.9.2",

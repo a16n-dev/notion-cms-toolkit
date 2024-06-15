@@ -52,11 +52,11 @@ import {
   RawNotionUser,
 } from '../../sharedTypes/rawObjectTypes.ts';
 import {
+  INotionConnector,
   NotionConnectorFileCacheHandler,
-  NotionConnectorInterface,
-} from './../notionConnectorInterface.ts';
+} from '../INotionConnector.ts';
 
-class NotionAPIConnector implements NotionConnectorInterface {
+class NotionAPIConnector implements INotionConnector {
   private readonly notionClient: Client;
   private fileCacheHandler: (url: string, name?: string) => Promise<NotionFile>;
 

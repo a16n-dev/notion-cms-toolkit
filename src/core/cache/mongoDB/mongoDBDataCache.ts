@@ -1,8 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import {
+  CachedNotionDatabase,
+  CachedNotionDocument,
+  PrismaClient,
+} from '@prisma/client';
 
 import { mapDatabase, mapDocument, mapFile, mapUser } from './mappers.ts';
 
-import { CachedFileData } from '../../sharedTypes/file.ts';
+import { CachedFileData } from '../../fileStore/types.ts';
 import { NotionPropertyType } from '../../sharedTypes/propertyTypes.ts';
 import {
   RawNotionDatabase,
@@ -10,7 +14,7 @@ import {
   RawNotionDocumentContent,
   RawNotionUser,
 } from '../../sharedTypes/rawObjectTypes.ts';
-import { DataCacheInterface } from '../dataCacheInterface.ts';
+import { IDataCache, IdOrSlug, IdOrSlugToQuery, isId } from '../IDataCache.ts';
 import {
   CachedNotionFile,
   NotionDatabase,
@@ -18,7 +22,7 @@ import {
   NotionUser,
 } from '../types.ts';
 
-export class MongoDBDataCache implements DataCacheInterface {
+export class MongoDBDataCache implements IDataCache {
   private prisma: PrismaClient;
 
   constructor() {
@@ -226,27 +230,9 @@ export class MongoDBDataCache implements DataCacheInterface {
     return mapFile(cachedFile);
   }
 
-  async queryDatabaseById(id: string): Promise<NotionDatabase | null> {
+  async queryDatabase(id: IdOrSlug): Promise<NotionDatabase | null> {
     const cachedDatabase = await this.prisma.cachedNotionDatabase.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!cachedDatabase) {
-      return null;
-    }
-
-    return mapDatabase(cachedDatabase);
-  }
-
-  async queryDatabaseByNotionId(
-    notionId: string,
-  ): Promise<NotionDatabase | null> {
-    const cachedDatabase = await this.prisma.cachedNotionDatabase.findUnique({
-      where: {
-        notionId,
-      },
+      where: IdOrSlugToQuery(id),
     });
 
     if (!cachedDatabase) {
@@ -262,46 +248,42 @@ export class MongoDBDataCache implements DataCacheInterface {
     return cachedDatabases.map(mapDatabase);
   }
 
-  async queryDocumentByNotionId(
-    notionId: string,
+  async queryDocumentInDatabase(
+    databaseId: IdOrSlug,
+    documentId: IdOrSlug,
   ): Promise<NotionDocument | null> {
-    const cachedDocument = await this.prisma.cachedNotionDocument.findUnique({
-      where: {
-        notionId,
-      },
-      include: {
-        database: true,
-      },
-    });
+    let document:
+      | (CachedNotionDocument & { database: CachedNotionDatabase })
+      | null;
 
-    if (!cachedDocument) {
-      return null;
-    }
-
-    return mapDocument(cachedDocument);
-  }
-
-  async queryDocumentInDatabaseBySlug(
-    databaseSlug: string,
-    documentSlug: string,
-  ): Promise<NotionDocument | null> {
-    const database = await this.prisma.cachedNotionDatabase.findUniqueOrThrow({
-      where: {
-        slug: databaseSlug,
-      },
-    });
-
-    const document = await this.prisma.cachedNotionDocument.findUnique({
-      where: {
-        slug_databaseId: {
-          databaseId: database.id,
-          slug: documentSlug,
+    if (isId(documentId)) {
+      document = await this.prisma.cachedNotionDocument.findUnique({
+        where: {
+          notionId: documentId.id,
         },
-      },
-      include: {
-        database: true,
-      },
-    });
+        include: {
+          database: true,
+        },
+      });
+    } else {
+      const database = await this.prisma.cachedNotionDatabase.findUniqueOrThrow(
+        {
+          where: IdOrSlugToQuery(databaseId),
+        },
+      );
+
+      document = await this.prisma.cachedNotionDocument.findUnique({
+        where: {
+          slug_databaseId: {
+            databaseId: database.id,
+            slug: documentId.slug,
+          },
+        },
+        include: {
+          database: true,
+        },
+      });
+    }
 
     if (!document) {
       return null;
@@ -310,13 +292,11 @@ export class MongoDBDataCache implements DataCacheInterface {
     return mapDocument(document);
   }
 
-  async queryDocumentsByDatabaseSlug(
-    databaseSlug: string,
+  async queryDocumentsByDatabase(
+    databaseId: IdOrSlug,
   ): Promise<NotionDocument[]> {
     const database = await this.prisma.cachedNotionDatabase.findUnique({
-      where: {
-        slug: databaseSlug,
-      },
+      where: IdOrSlugToQuery(databaseId),
       include: {
         documents: {
           include: {
@@ -327,7 +307,7 @@ export class MongoDBDataCache implements DataCacheInterface {
     });
 
     if (!database) {
-      throw new Error(`Invalid database "${databaseSlug}"`);
+      throw new Error(`Invalid database "${JSON.stringify(databaseId)}"`);
     }
 
     return database.documents.map(mapDocument);
@@ -348,4 +328,4 @@ export class MongoDBDataCache implements DataCacheInterface {
   }
 }
 
-export const buildDocumentCache = () => new MongoDBDataCache();
+export const buildMongoDBDataCache = () => new MongoDBDataCache();

@@ -11,7 +11,7 @@ import {
  * This data is returned in a format designed to be stored in an intermediate database
  */
 
-export interface NotionConnectorInterface {
+export interface INotionConnector {
   /**
    * Returns a list of all databases that the integration has access to.
    * For each database, the response includes the metadata about the database, as well as it's property schema.

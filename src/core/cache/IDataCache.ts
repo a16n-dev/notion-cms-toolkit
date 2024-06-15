@@ -5,7 +5,7 @@ import {
   NotionUser,
 } from './types.ts';
 
-import { CachedFileData } from '../sharedTypes/file.ts';
+import { CachedFileData } from '../fileStore/types.ts';
 import {
   RawNotionDatabase,
   RawNotionDocument,
@@ -14,9 +14,25 @@ import {
 } from '../sharedTypes/rawObjectTypes';
 
 /**
+ * This is used for querying documents, as either a notion ID, or a slug can be used
+ */
+export type IdOrSlug = { id: string } | { slug: string };
+
+export const IdOrSlugToQuery = (idOrSlug: IdOrSlug) => ({
+  notionId: (idOrSlug as any).id,
+  slug: (idOrSlug as any).slug,
+});
+
+export const isId = (idOrSlug: IdOrSlug): idOrSlug is { id: string } =>
+  (idOrSlug as any).id !== undefined;
+
+export const isSlug = (idOrSlug: IdOrSlug): idOrSlug is { slug: string } =>
+  (idOrSlug as any).slug !== undefined;
+
+/**
  * Responsible for storing notion data in the cache.
  */
-export interface DataCacheInterface {
+export interface IDataCache {
   /**
    * Stores information about a notion database in the cache
    */
@@ -71,13 +87,12 @@ export interface DataCacheInterface {
 
   // Database query methods
   queryDatabases(): Promise<NotionDatabase[]>;
-  queryDatabaseByNotionId(notionId: string): Promise<NotionDatabase | null>;
+  queryDatabase(databaseIds: IdOrSlug): Promise<NotionDatabase | null>;
 
   // Document query methods
-  queryDocumentsByDatabaseSlug(databaseSlug: string): Promise<NotionDocument[]>;
-  queryDocumentByNotionId(notionId: string): Promise<NotionDocument | null>;
-  queryDocumentInDatabaseBySlug(
-    databaseSlug: string,
-    documentSlug: string,
+  queryDocumentsByDatabase(databaseId: IdOrSlug): Promise<NotionDocument[]>;
+  queryDocumentInDatabase(
+    database: IdOrSlug,
+    document: IdOrSlug,
   ): Promise<NotionDocument | null>;
 }

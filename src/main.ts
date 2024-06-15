@@ -1,28 +1,30 @@
 import 'dotenv/config';
 
-import { buildDocumentCache } from './core/cache/mongoDB/mongoDBDataCache.ts';
+import { buildMongoDBDataCache } from './core/cache/mongoDB/mongoDBDataCache.ts';
 import { buildNotionAPIConnector } from './core/connector/notionAPIConnector/notionAPIConnector.ts';
+import { buildNotionDatastore } from './core/datastore/notionDatastore.ts';
 
-import { buildNotionDatastore } from './core/datastore/notionDatastoreV1.ts';
+import { buildS3FileStore } from './core/fileStore/S3FileStore/S3FileStore.ts';
 
+// define the different system components
 const connector = buildNotionAPIConnector(process.env.NOTION_API_KEY!);
+const cache = buildMongoDBDataCache();
+const fileStore = buildS3FileStore();
 
-const cache = buildDocumentCache();
-
+// build the datastore
 const datastore = buildNotionDatastore({
   connector,
   cache,
+  fileStore,
 });
 
-// syncs databases
-// await datastore.syncDatabases();
-// await datastore.syncUsers();
-//
-// const databases = await cache.queryDatabases();
-// //
-// for (const database of databases) {
-//   await datastore.syncDatabaseDocuments(database.notionId);
-// }
+// Example #1: Populate the cache
+await datastore.sync.users();
+const databases = await datastore.sync.databases();
 
-// sync blocks for the test article
-await datastore.sync.documentContent('502aac19-da1f-433e-9601-1e0800ecda15');
+for (const database of databases) {
+  await datastore.sync.databaseDocuments(database.id);
+}
+
+// Example #2: Update a document
+const document = await datastore.sync.databaseDocuments('example-document-id');

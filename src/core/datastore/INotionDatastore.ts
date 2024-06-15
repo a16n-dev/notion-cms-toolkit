@@ -1,44 +1,40 @@
 import { NotionDocument } from '../../client/clientTypes.ts';
-import { DataCacheInterface } from '../cache/dataCacheInterface.ts';
-import { NotionConnectorInterface } from '../connector/notionConnectorInterface';
-import { FileStoreInterface } from '../fileStore/fileStoreInterface.ts';
-
-/**
- * This is used for querying documents, as either a notion ID, or a slug can be used
- */
-export type IdOrSlug = { id: string } | { slug: string };
+import { IDataCache, IdOrSlug } from '../cache/IDataCache.ts';
+import { NotionDatabase, NotionUser } from '../cache/types.ts';
+import { INotionConnector } from '../connector/INotionConnector.ts';
+import { IFileStore } from '../fileStore/IFileStore.ts';
 
 /**
  * The `NotionDatastore` is responsible for calling the `NotionConnector`, and persisting it in the database of choice.
  * This is the central system component.
  * The Datastore is intended to either be exposed as an API to other parts of the system, or to be called through the client
  */
-export interface NotionDatastoreInterface {
+export interface INotionDatastore {
   sync: {
     /**
      * Syncs the notion users with the local cache
      */
-    users(): Promise<void>;
+    users(): Promise<NotionUser[]>;
 
     /**
      * Syncs the list of databases that are available to the integration
      */
-    databases(): Promise<void>;
+    databases(): Promise<NotionDatabase[]>;
 
     /**
      * Syncs the list of pages in the database
      */
-    databaseDocuments(notionDatabase: string): Promise<void>;
+    databaseDocuments(notionDatabase: string): Promise<NotionDocument[]>;
 
     /**
      * Syncs the latest blocks for a given document
      */
-    documentContent(notionDocument: string): Promise<void>;
+    documentContent(notionDocument: string): Promise<NotionDocument>;
 
     /**
      * Syncs both document properties and document blocks for a given document
      */
-    document(notionDocument: string): Promise<void>;
+    document(notionDocument: string): Promise<NotionDocument>;
   };
 
   query: {
@@ -55,7 +51,7 @@ export interface NotionDatastoreInterface {
  * These are the different components that can be configured within the datastore
  */
 export interface NotionDatastoreConfig {
-  connector: NotionConnectorInterface;
-  cache: DataCacheInterface;
-  fileStore: FileStoreInterface;
+  connector: INotionConnector;
+  cache: IDataCache;
+  fileStore: IFileStore;
 }
