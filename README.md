@@ -17,3 +17,6 @@ See above features. From experience, I've found that all of these features are r
 
 ## Using the Toolkit
 There isn't yet an easy way to drop this into an existing project, however the patterns used to solve the challenges will hopefully be useful if you're trying to build this yourself 
+
+## System Design
+<img width="398" alt="image" src="https://github.com/a16n-dev/notion-cms-toolkit/assets/39721828/bb56f584-b3e0-4d24-b586-634e6e5a49b3">
