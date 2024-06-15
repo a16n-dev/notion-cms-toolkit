@@ -3,7 +3,6 @@ import axios from 'axios';
 import { fileTypeFromBuffer } from 'file-type';
 import { randomUUID } from 'node:crypto';
 
-import { NotionFile } from '../../sharedTypes/notionHelperTypes.ts';
 import { IFileStore } from '../IFileStore.ts';
 import { CachedFileData } from '../types.ts';
 
@@ -33,12 +32,12 @@ class S3FileStore implements IFileStore {
     this.keyPrefix = config.keyPrefix;
   }
 
-  async cacheFile(urlKey: string, file: NotionFile): Promise<CachedFileData> {
+  async cacheFile(urlKey: string, url: string): Promise<CachedFileData> {
     // if not, download the file and cache it
     let data: ArrayBuffer;
 
     try {
-      const { data: imageBuffer } = await axios.get(file.url, {
+      const { data: imageBuffer } = await axios.get(url, {
         responseType: 'arraybuffer',
       });
 

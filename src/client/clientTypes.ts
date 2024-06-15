@@ -558,7 +558,7 @@ export interface NotionLinkPreviewBlock {
   children: undefined;
 }
 
-export type NotionDocument = {
+export type NotionDocumentResponse = {
   id: string;
   slug: string;
   name: string;
@@ -568,7 +568,7 @@ export type NotionDocument = {
   blocks: NotionTopLevelBlock[];
 };
 
-export type NotionUser = {
+export type NotionUserResponse = {
   name?: string;
   avatar?: string;
   isBot: boolean;

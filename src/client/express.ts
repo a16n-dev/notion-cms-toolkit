@@ -1,13 +1,27 @@
 import express from 'express';
 
-import { buildDocumentCache } from '../core/datastore/documentCacheV1.ts';
+import { buildMongoDBDataCache } from '../core/cache/mongoDB/mongoDBDataCache.ts';
+import { buildNotionAPIConnector } from '../core/connector/notionAPIConnector/notionAPIConnector.ts';
+import { buildNotionDatastore } from '../core/datastore/notionDatastore.ts';
+import { buildS3FileStore } from '../core/fileStore/S3FileStore/S3FileStore.ts';
 import { ClientV1 } from './clientV1.ts';
 
 const app = express();
 const port = 3000;
 
-const documentCache = buildDocumentCache();
-const client = new ClientV1(documentCache);
+// define the different system components
+const connector = buildNotionAPIConnector(process.env.NOTION_API_KEY!);
+const cache = buildMongoDBDataCache();
+const fileStore = buildS3FileStore({} as any);
+
+// build the datastore
+const datastore = buildNotionDatastore({
+  connector,
+  cache,
+  fileStore,
+});
+
+const client = new ClientV1(datastore);
 
 app.get('/database/:database/documents', async (req, res) => {
   const dbSlug = req.params.database;

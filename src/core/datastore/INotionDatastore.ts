@@ -1,6 +1,5 @@
-import { NotionDocument } from '../../client/clientTypes.ts';
 import { IDataCache, IdOrSlug } from '../cache/IDataCache.ts';
-import { NotionDatabase, NotionUser } from '../cache/types.ts';
+import { NotionDatabase, NotionDocument, NotionUser } from '../cache/types.ts';
 import { INotionConnector } from '../connector/INotionConnector.ts';
 import { IFileStore } from '../fileStore/IFileStore.ts';
 

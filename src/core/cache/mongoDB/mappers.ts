@@ -8,8 +8,8 @@ import {
 import {
   NotionDatabase,
   NotionDocument,
-  CachedNotionFileInterface,
   NotionUser,
+  CachedNotionFile as CachedNotionFileType,
 } from '../types.ts';
 
 export const mapDatabase = (
@@ -52,7 +52,7 @@ export const mapUser = (user: CachedNotionUser): NotionUser => ({
   lastSyncedAt: user.lastSyncedAt,
 });
 
-export const mapFile = (file: CachedNotionFile): CachedNotionFileInterface => ({
+export const mapFile = (file: CachedNotionFile): CachedNotionFileType => ({
   urlKey: file.urlKey,
   fileSizeInKb: file.fileSizeInKb,
   url: file.url,

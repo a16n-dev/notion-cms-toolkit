@@ -9,7 +9,7 @@ import { buildS3FileStore } from './core/fileStore/S3FileStore/S3FileStore.ts';
 // define the different system components
 const connector = buildNotionAPIConnector(process.env.NOTION_API_KEY!);
 const cache = buildMongoDBDataCache();
-const fileStore = buildS3FileStore();
+const fileStore = buildS3FileStore({} as any);
 
 // build the datastore
 const datastore = buildNotionDatastore({

@@ -1,12 +1,10 @@
 import { camelCase } from 'change-case';
 
 import { ClientInterface } from './clientInterface.ts';
-import { NotionDocument } from './clientTypes.ts';
+import { NotionDocumentResponse } from './clientTypes.ts';
 
-import {
-  CachedNotionDocumentWithCorrectedTypes,
-  DocumentCacheInterface,
-} from '../core/datastore/documentCacheInterface.ts';
+import { NotionDocument } from '../core/cache/types.ts';
+import { INotionDatastore } from '../core/datastore/INotionDatastore.ts';
 import { NotionBlock } from '../core/sharedTypes/notionBlockTypes.ts';
 
 const stripBlockIDs = (blocks: NotionBlock[]) => {
@@ -19,18 +17,18 @@ const stripBlockIDs = (blocks: NotionBlock[]) => {
 };
 
 export class ClientV1 implements ClientInterface {
-  constructor(private documentCache: DocumentCacheInterface) {}
+  constructor(private documentCache: INotionDatastore) {}
 
   async getDocumentBySlug(
     databaseSlug: string,
     documentSlug: string,
-  ): Promise<NotionDocument | null> {
+  ): Promise<NotionDocumentResponse | null> {
     // find the database with the given name
 
     // get the document
-    const document = await this.documentCache.queryDocumentInDatabaseBySlug(
-      databaseSlug,
-      documentSlug,
+    const document = await this.documentCache.query.document(
+      { slug: databaseSlug },
+      { slug: documentSlug },
     );
 
     if (!document) {
@@ -40,9 +38,7 @@ export class ClientV1 implements ClientInterface {
     return this.mapDocument(document);
   }
 
-  private mapDocument(
-    document: CachedNotionDocumentWithCorrectedTypes,
-  ): NotionDocument {
+  private mapDocument(document: NotionDocument): NotionDocumentResponse {
     const properties = document.properties.reduce((acc, property) => {
       acc[camelCase(property.name)] = property.value;
       return acc;
@@ -59,9 +55,10 @@ export class ClientV1 implements ClientInterface {
     };
   }
 
-  async getDocuments(databaseSlug: string): Promise<NotionDocument[]> {
-    const documents =
-      await this.documentCache.queryDocumentsByDatabaseSlug(databaseSlug);
+  async getDocuments(databaseSlug: string): Promise<NotionDocumentResponse[]> {
+    const documents = await this.documentCache.query.documentsInDatabase({
+      slug: databaseSlug,
+    });
 
     return documents.map(this.mapDocument);
   }
